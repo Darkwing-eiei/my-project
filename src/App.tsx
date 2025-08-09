@@ -1,22 +1,47 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Receipt, BarChart3, Home, Plus, Minus, Trash2, Eye, TrendingUp, DollarSign, Package, Users, Settings, Edit, Save, X } from 'lucide-react';
 
+// กำหนดประเภทข้อมูล (Interfaces) สำหรับข้อมูลต่างๆ ในแอปพลิเคชัน
+interface MenuItem {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+}
+
+interface OrderItem extends MenuItem {
+  quantity: number;
+}
+
+interface Bill {
+  id: number;
+  date: string;
+  items: OrderItem[];
+  total: number;
+  status: string;
+}
+
+interface ShopSettings {
+  shopName: string;
+  promptPayId: string;
+  promptPayName: string;
+}
+
 const RestaurantApp = () => {
-  // สร้าง state สำหรับการจัดการข้อมูลต่างๆ
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [orders, setOrders] = useState([]);
-  const [currentOrder, setCurrentOrder] = useState([]);
-  const [bills, setBills] = useState([]);
-  const [menuItems, setMenuItems] = useState([]);
-  const [editingItem, setEditingItem] = useState(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newItem, setNewItem] = useState({ name: '', price: '', category: '' });
-  const [shopSettings, setShopSettings] = useState({
+  // สร้าง state สำหรับการจัดการข้อมูลต่างๆ พร้อมกำหนดประเภทข้อมูล
+  const [currentPage, setCurrentPage] = useState<string>('dashboard');
+  const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [editingItem, setEditingItem] = useState<number | null>(null);
+  const [showAddForm, setShowAddForm] = useState<boolean>(false);
+  const [newItem, setNewItem] = useState<{ name: string; price: string; category: string }>({ name: '', price: '', category: '' });
+  const [shopSettings, setShopSettings] = useState<ShopSettings>({
     shopName: 'ร้านอาหารตามสั่ง',
     promptPayId: '0123456789',
     promptPayName: 'นายสมชาย ใจดี'
   });
-  const [showSettingsForm, setShowSettingsForm] = useState(false);
+  const [showSettingsForm, setShowSettingsForm] = useState<boolean>(false);
 
   // useEffect สำหรับโหลดข้อมูลจาก localStorage เมื่อ Component โหลดครั้งแรก
   useEffect(() => {
@@ -28,7 +53,7 @@ const RestaurantApp = () => {
       setMenuItems(JSON.parse(savedMenuItems));
     } else {
       // ข้อมูลเริ่มต้นหากไม่มีใน localStorage
-      setMenuItems([
+      const initialMenuItems: MenuItem[] = [
         { id: 1, name: 'ข้าวผัดกุ้ง', price: 60, category: 'ข้าว' },
         { id: 2, name: 'ข้าวผัดหมู', price: 50, category: 'ข้าว' },
         { id: 3, name: 'ผัดไทย', price: 45, category: 'เส้น' },
@@ -37,7 +62,8 @@ const RestaurantApp = () => {
         { id: 6, name: 'แกงเขียวหวาน', price: 70, category: 'แกง' },
         { id: 7, name: 'โค้กเย็น', price: 20, category: 'เครื่องดื่ม' },
         { id: 8, name: 'น้ำเปล่า', price: 15, category: 'เครื่องดื่ม' }
-      ]);
+      ];
+      setMenuItems(initialMenuItems);
     }
 
     if (savedBills) {
@@ -66,11 +92,11 @@ const RestaurantApp = () => {
   const calculateStats = () => {
     const today = new Date().toDateString();
     const todayBills = bills.filter(bill => new Date(bill.date).toDateString() === today);
-    const todayRevenue = todayBills.reduce((sum, bill) => sum + bill.total, 0);
-    const totalRevenue = bills.reduce((sum, bill) => sum + bill.total, 0);
+    const todayRevenue = todayBills.reduce((sum: number, bill: Bill) => sum + bill.total, 0);
+    const totalRevenue = bills.reduce((sum: number, bill: Bill) => sum + bill.total, 0);
 
     // เมนูขายดี
-    const itemSales = {};
+    const itemSales: { [key: string]: number } = {};
     bills.forEach(bill => {
       bill.items.forEach(item => {
         itemSales[item.name] = (itemSales[item.name] || 0) + item.quantity;
@@ -93,7 +119,7 @@ const RestaurantApp = () => {
   const stats = calculateStats();
 
   // เพิ่มรายการในออเดอร์
-  const addToOrder = (item) => {
+  const addToOrder = (item: MenuItem) => {
     const existingItem = currentOrder.find(orderItem => orderItem.id === item.id);
     if (existingItem) {
       setCurrentOrder(currentOrder.map(orderItem =>
@@ -111,7 +137,7 @@ const RestaurantApp = () => {
     if (!newItem.name || !newItem.price || !newItem.category) return;
 
     const nextId = menuItems.length > 0 ? Math.max(...menuItems.map(item => item.id)) + 1 : 1;
-    const item = {
+    const item: MenuItem = {
       id: nextId,
       name: newItem.name,
       price: parseInt(newItem.price),
@@ -124,7 +150,7 @@ const RestaurantApp = () => {
   };
 
   // อัพเดทเมนู
-  const updateMenuItem = (id, updatedItem) => {
+  const updateMenuItem = (id: number, updatedItem: Partial<MenuItem>) => {
     setMenuItems(menuItems.map(item =>
       item.id === id ? { ...item, ...updatedItem } : item
     ));
@@ -132,12 +158,12 @@ const RestaurantApp = () => {
   };
 
   // ลบเมนู
-  const deleteMenuItem = (id) => {
+  const deleteMenuItem = (id: number) => {
     setMenuItems(menuItems.filter(item => item.id !== id));
   };
 
   // สร้าง QR Code PromptPay
-  const generatePromptPayQR = (amount) => {
+  const generatePromptPayQR = (amount: number) => {
     // รูปแบบ QR Code สำหรับ PromptPay
     const promptPayId = shopSettings.promptPayId.replace(/-/g, '');
     const amountStr = amount.toFixed(2);
@@ -146,7 +172,7 @@ const RestaurantApp = () => {
   };
 
   // อัพเดทจำนวนในออเดอร์
-  const updateQuantity = (itemId, newQuantity) => {
+  const updateQuantity = (itemId: number, newQuantity: number) => {
     if (newQuantity <= 0) {
       setCurrentOrder(currentOrder.filter(item => item.id !== itemId));
     } else {
@@ -157,12 +183,12 @@ const RestaurantApp = () => {
   };
 
   // ลบรายการจากออเดอร์
-  const removeFromOrder = (itemId) => {
+  const removeFromOrder = (itemId: number) => {
     setCurrentOrder(currentOrder.filter(item => item.id !== itemId));
   };
 
   // คำนวณยอดรวม
-  const calculateTotal = (orderItems) => {
+  const calculateTotal = (orderItems: OrderItem[]) => {
     return orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
@@ -170,7 +196,7 @@ const RestaurantApp = () => {
   const generateBill = () => {
     if (currentOrder.length === 0) return;
 
-    const newBill = {
+    const newBill: Bill = {
       id: bills.length > 0 ? Math.max(...bills.map(b => b.id)) + 1 : 1,
       date: new Date().toISOString(),
       items: currentOrder,
@@ -335,7 +361,7 @@ const RestaurantApp = () => {
                 {editingItem === item.id ? (
                   <MenuItemEditForm
                     item={item}
-                    onSave={(updatedItem) => updateMenuItem(item.id, updatedItem)}
+                    onSave={(updatedItem: Partial<MenuItem>) => updateMenuItem(item.id, updatedItem)}
                     onCancel={() => setEditingItem(null)}
                   />
                 ) : (
@@ -373,9 +399,15 @@ const RestaurantApp = () => {
     </div>
   );
 
+  interface MenuItemEditFormProps {
+    item: MenuItem;
+    onSave: (updatedItem: Partial<MenuItem>) => void;
+    onCancel: () => void;
+  }
+
   // คอมโพเนนต์ฟอร์มแก้ไขเมนู
-  const MenuItemEditForm = ({ item, onSave, onCancel }) => {
-    const [editData, setEditData] = useState({
+  const MenuItemEditForm = ({ item, onSave, onCancel }: MenuItemEditFormProps) => {
+    const [editData, setEditData] = useState<MenuItem>({
       name: item.name,
       price: item.price,
       category: item.category
@@ -385,7 +417,7 @@ const RestaurantApp = () => {
       if (!editData.name || !editData.price || !editData.category) return;
       onSave({
         name: editData.name,
-        price: parseInt(editData.price),
+        price: parseInt(editData.price as unknown as string),
         category: editData.category
       });
     };
@@ -402,7 +434,7 @@ const RestaurantApp = () => {
         <input
           type="number"
           value={editData.price}
-          onChange={(e) => setEditData({ ...editData, price: e.target.value })}
+          onChange={(e) => setEditData({ ...editData, price: parseInt(e.target.value) })}
           className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="ราคา"
         />
@@ -534,7 +566,7 @@ const RestaurantApp = () => {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">เมนูอาหาร</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {menuItems.map(item => (
+            {menuItems.map((item: MenuItem) => (
               <div key={item.id} className="bg-white p-4 rounded-lg shadow-sm border hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-medium">{item.name}</h3>
