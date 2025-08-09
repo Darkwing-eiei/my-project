@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Receipt, BarChart3, Home, Plus, Minus, Trash2, Eye, TrendingUp, DollarSign, Package, Users, Settings, Edit, Save, X } from 'lucide-react';
+import { ShoppingCart, Receipt, BarChart3, Home, Plus, Minus, Trash2, TrendingUp, DollarSign, Package, Users, Settings, Edit, Save, X } from 'lucide-react';
 
 // กำหนดประเภทข้อมูล (Interfaces) สำหรับข้อมูลต่างๆ ในแอปพลิเคชัน
 interface MenuItem {
@@ -407,7 +407,7 @@ const RestaurantApp = () => {
 
   // คอมโพเนนต์ฟอร์มแก้ไขเมนู
   const MenuItemEditForm = ({ item, onSave, onCancel }: MenuItemEditFormProps) => {
-    const [editData, setEditData] = useState<MenuItem>({
+    const [editData, setEditData] = useState<Omit<MenuItem, 'id'>>({
       name: item.name,
       price: item.price,
       category: item.category
@@ -417,7 +417,7 @@ const RestaurantApp = () => {
       if (!editData.name || !editData.price || !editData.category) return;
       onSave({
         name: editData.name,
-        price: parseInt(editData.price as unknown as string),
+        price: editData.price,
         category: editData.category
       });
     };
